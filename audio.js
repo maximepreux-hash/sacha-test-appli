@@ -191,9 +191,9 @@ const Sound = (() => {
     [0, 0.05, 0.1].forEach((d, i) => tone(midi(base + 7 + i * 5), t + 0.25 + d, 0.12, 'sine', 0.12));
   }
   // Bruit de claque : un « clac » sec (bruit filtré très court) + un petit choc sourd
-  function slap(kind) {
+  function slap(kind, delay) {
     if (!ctx) return;
-    const t = now();
+    const t = now() + (delay || 0);
     const burst = (start, dur, vol, type, freq, q) => {
       const s = ctx.createBufferSource();
       s.buffer = noiseBuf;
@@ -213,6 +213,59 @@ const Sound = (() => {
     // petit « boïng » de dessin animé, différent pour chacun
     const b = [880, 620, 760][kind] || 700;
     tone(b, t + 0.08, 0.3, 'triangle', 0.15, sfxBus, b * 0.45);
+  }
+
+  // Bruit de prout : un son grave qui « vibre » (tremolo) et descend, avec un peu de souffle
+  function fart(delay) {
+    if (!ctx) return;
+    const t = now() + (delay || 0);
+    const dur = 0.45 + Math.random() * 0.45;
+    const f0 = 85 + Math.random() * 45;
+
+    const out = ctx.createGain();
+    out.gain.setValueAtTime(0.0001, t);
+    out.gain.exponentialRampToValueAtTime(1.0, t + 0.02);
+    out.gain.setValueAtTime(1.0, t + dur * 0.7);
+    out.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 700; lp.Q.value = 4;
+    lp.connect(out); out.connect(sfxBus);
+
+    // le « brrr » : on module le volume très vite
+    const flutter = ctx.createGain();
+    flutter.gain.value = 0.5;
+    flutter.connect(lp);
+    const lfo = ctx.createOscillator();
+    lfo.type = 'square';
+    lfo.frequency.setValueAtTime(22 + Math.random() * 14, t);
+    lfo.frequency.linearRampToValueAtTime(14 + Math.random() * 6, t + dur);
+    const lfoAmt = ctx.createGain();
+    lfoAmt.gain.value = 0.45;
+    lfo.connect(lfoAmt); lfoAmt.connect(flutter.gain);
+
+    const o = ctx.createOscillator();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(f0 * 0.6, t + dur);
+    if (Math.random() < 0.4) { // parfois un petit couinement à la fin
+      o.frequency.setValueAtTime(f0 * 0.6, t + dur * 0.8);
+      o.frequency.exponentialRampToValueAtTime(f0 * 1.6, t + dur);
+    }
+    const wob = ctx.createOscillator();
+    wob.frequency.value = 7;
+    const wobAmt = ctx.createGain();
+    wobAmt.gain.value = f0 * 0.12;
+    wob.connect(wobAmt); wobAmt.connect(o.frequency);
+    o.connect(flutter);
+
+    const n = ctx.createBufferSource();
+    n.buffer = noiseBuf; n.loop = true;
+    const nf = ctx.createBiquadFilter();
+    nf.type = 'lowpass'; nf.frequency.value = 350;
+    const ng = ctx.createGain(); ng.gain.value = 0.6;
+    n.connect(nf); nf.connect(ng); ng.connect(flutter);
+
+    [lfo, o, wob, n].forEach((x) => { x.start(t); x.stop(t + dur + 0.05); });
   }
 
   function miss() {
@@ -260,5 +313,5 @@ const Sound = (() => {
 
   const state = () => (ctx ? ctx.state : 'absent');
 
-  return { unlock, startMusic, stopMusic, hit, slap, miss, popUp, beep, fanfare, setMuted, test, state };
+  return { unlock, startMusic, stopMusic, hit, slap, fart, miss, popUp, beep, fanfare, setMuted, test, state };
 })();

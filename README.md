@@ -4,7 +4,8 @@ Un petit jeu de tape-taupe pour Sacha : les têtes de Sacha, Papa et Мама so
 briques de construction. Deux façons de jouer, au choix dans le menu :
 
 - **✋ Claques** : une main gifle la tête, qui part sur le côté avec la joue toute rouge,
-  des étoiles qui tournent et un « PAF ! » de bande dessinée, avec un vrai bruit de claque.
+  des étoiles qui tournent et un « PAF ! » de bande dessinée, avec un vrai bruit de claque
+  au moment où la main touche le visage. Sur Мама, c'est un bruit de prout 💨 !
 - **👋 Coucou** : version douce, on fait coucou aux têtes qui rient et envoient des cœurs.
 
 - 45 secondes par partie, 3 niveaux (Facile, Moyen, Rapide)

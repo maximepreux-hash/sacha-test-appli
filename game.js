@@ -251,8 +251,15 @@
       // la tête part du côté où va la main ; la joue frappée devient rouge
       h.el.style.setProperty('--dir', String(lastDir));
       h.el.style.setProperty('--cheek-x', lastDir > 0 ? '2%' : '50%');
-      Sound.slap(h.kind);
-      floatText(h, SLAP_WORDS[Math.floor(Math.random() * SLAP_WORDS.length)], false, 'paf');
+      // le son part au moment exact où la main touche le visage
+      if (h.kind === FART_KIND) {
+        Sound.fart(CONTACT_S);
+        floatText(h, pick(FART_WORDS), false, 'paf prout');
+        puff(h);
+      } else {
+        Sound.slap(h.kind, CONTACT_S);
+        floatText(h, pick(SLAP_WORDS), false, 'paf');
+      }
     } else {
       Sound.hit(h.kind);
       floatText(h, 'Coucou !', false);
@@ -286,6 +293,22 @@
   }
 
   const SLAP_WORDS = ['PAF !', 'BIM !', 'CLAC !', 'VLAN !', 'SLAP !', 'AÏE !'];
+  // 3e personnage (Мама) : bruit de prout à la place de la claque
+  const FART_KIND = 2;
+  const FART_WORDS = ['PROUT !', 'POUET !', 'PFFRRT !', 'PROUUUT !'];
+  // la main touche le visage 70 ms après le doigt (voir l'animation slapHand dans style.css)
+  const CONTACT_S = 0.07;
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+  // petit nuage 💨 qui s'échappe
+  function puff(h) {
+    const e = document.createElement('div');
+    e.className = 'puff';
+    e.textContent = '💨';
+    e.style.setProperty('--dir', String(-lastDir));
+    h.el.appendChild(e);
+    setTimeout(() => e.remove(), 1200);
+  }
 
   function floatText(h, text, big, extra) {
     const f = document.createElement('div');
