@@ -30,22 +30,69 @@ const Sound = (() => {
     return ctx;
   }
 
-  // À appeler depuis un geste de l'utilisateur (obligatoire sur iPhone/iPad).
+  // --- iPhone/iPad : jouer le son même quand le bouton « silencieux » est activé ---
+  // iOS 17+ : on déclare que le jeu « joue » du son (comme une appli de musique).
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* ignoré */ }
+
+  // Versions plus anciennes d'iOS : un petit son muet en boucle dans une balise <audio>
+  // fait passer la page en mode « lecture », ce qui débloque aussi les sons du jeu.
+  let keepAlive = null;
+  function silentWavUrl() {
+    const rate = 8000, n = rate; // 1 seconde de silence
+    const buf = new ArrayBuffer(44 + n);
+    const v = new DataView(buf);
+    const str = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    str(0, 'RIFF'); v.setUint32(4, 36 + n, true); str(8, 'WAVE');
+    str(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, rate, true); v.setUint32(28, rate, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true);
+    str(36, 'data'); v.setUint32(40, n, true);
+    for (let i = 0; i < n; i++) v.setUint8(44 + i, 128);
+    return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+  }
+  function startKeepAlive() {
+    if (navigator.audioSession) return; // inutile sur iOS 17+
+    try {
+      if (!keepAlive) {
+        keepAlive = document.createElement('audio');
+        keepAlive.src = silentWavUrl();
+        keepAlive.loop = true;
+        keepAlive.setAttribute('playsinline', '');
+        keepAlive.setAttribute('x-webkit-airplay', 'deny');
+      }
+      if (keepAlive.paused && !document.hidden) {
+        const pr = keepAlive.play();
+        if (pr && pr.catch) pr.catch(() => {});
+      }
+    } catch (e) { /* ignoré */ }
+  }
+
+  // À appeler depuis un geste de l'utilisateur (obligatoire sur iPhone/iPad et Android).
   function unlock() {
     const c = ensure();
     if (!c) return;
-    if (c.state === 'running') {
-      if (musicWanted && !timer) startScheduler();
-      return;
+    startKeepAlive();
+    if (c.state !== 'running') {
+      // 'suspended' au démarrage, 'interrupted' après un appel ou un retour d'arrière-plan
+      try {
+        const pr = c.resume();
+        if (pr && pr.then) pr.then(() => { if (musicWanted && !timer) startScheduler(); }).catch(() => {});
+      } catch (e) { /* ignoré */ }
+      try {
+        const b = c.createBuffer(1, 1, 22050);
+        const s = c.createBufferSource();
+        s.buffer = b;
+        s.connect(c.destination);
+        s.start(0);
+      } catch (e) { /* ignoré */ }
     }
-    c.resume();
-    const b = c.createBuffer(1, 1, 22050);
-    const s = c.createBufferSource();
-    s.buffer = b;
-    s.connect(c.destination);
-    s.start(0);
     if (musicWanted && !timer) startScheduler();
   }
+
+  // Les navigateurs n'autorisent le son qu'après certains gestes (souvent quand le doigt se lève),
+  // donc on essaie à chacun d'eux.
+  ['touchstart', 'touchend', 'pointerdown', 'pointerup', 'click', 'keydown'].forEach((ev) => {
+    document.addEventListener(ev, unlock, { capture: true, passive: true });
+  });
 
   function tone(freq, start, dur, type, vol, dest, slideTo) {
     const o = ctx.createOscillator();
@@ -167,9 +214,24 @@ const Sound = (() => {
 
   document.addEventListener('visibilitychange', () => {
     if (!ctx) return;
-    if (document.hidden) ctx.suspend();
-    else ctx.resume();
+    if (document.hidden) {
+      ctx.suspend().catch(() => {});
+      if (keepAlive) keepAlive.pause();
+    } else {
+      ctx.resume().catch(() => {});
+    }
   });
 
-  return { unlock, startMusic, stopMusic, hit, miss, popUp, beep, fanfare, setMuted };
+  // Petit test pour les réglages : une mélodie courte et bien audible.
+  function test() {
+    unlock();
+    if (!ctx) return false;
+    const t = now() + 0.05;
+    [72, 76, 79, 84].forEach((m, i) => tone(midi(m), t + i * 0.15, 0.3, 'square', 0.25));
+    return true;
+  }
+
+  const state = () => (ctx ? ctx.state : 'absent');
+
+  return { unlock, startMusic, stopMusic, hit, miss, popUp, beep, fanfare, setMuted, test, state };
 })();

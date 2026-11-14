@@ -560,3 +560,21 @@ img { -webkit-user-drag: none; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) {
   .title .t, .menu-face { animation: none; }
 }
+
+.sound-box {
+  width: min(100%, 520px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.sound-help {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(0,0,0,.2);
+  font-size: 15px;
+  line-height: 1.4;
+  text-align: center;
+}
+.sound-help[hidden] { display: none; }

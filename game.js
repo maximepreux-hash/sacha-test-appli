@@ -497,7 +497,6 @@
   });
 
   // ---------- Boutons ----------
-  document.addEventListener('pointerdown', () => Sound.unlock(), true);
 
   document.querySelectorAll('.level').forEach((b) => b.addEventListener('click', () => {
     state.level = +b.dataset.level; save(); renderMenu();
@@ -513,6 +512,12 @@
     renderMenu();
   });
   $('#btn-settings').addEventListener('click', () => { renderSettings(); showScreen('settings'); });
+  $('#btn-sound-test').addEventListener('click', () => {
+    const msg = $('#sound-help');
+    if (state.muted) { state.muted = false; save(); Sound.setMuted(false); renderMenu(); }
+    Sound.test();
+    msg.hidden = false;
+  });
   $('#btn-settings-done').addEventListener('click', () => {
     refreshHoleImages(); renderMenu(); showScreen('menu');
   });
