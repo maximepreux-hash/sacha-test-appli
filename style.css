@@ -305,7 +305,7 @@ img { -webkit-user-drag: none; pointer-events: none; }
 .hole.up .mole[data-kind="ball"] .pball { animation: bob .45s ease-in-out infinite alternate; }
 @keyframes bob { from { transform: translateY(0); } to { transform: translateY(-14%); } }
 
-.hole.hit .face { animation: giggle .45s ease-in-out forwards; }
+.mode-coucou .hole.hit .face { animation: giggle .45s ease-in-out forwards; }
 .hole.hit .pball { animation: caught .35s ease-out forwards; }
 /* la tête se tortille de rire */
 @keyframes giggle {
@@ -425,7 +425,7 @@ img { -webkit-user-drag: none; pointer-events: none; }
   opacity: 0;
   transform-origin: 60% 90%;
 }
-.paddle.swing { animation: wave .5s ease-out forwards; }
+.mode-coucou .paddle.swing { animation: wave .5s ease-out forwards; }
 @keyframes wave {
   0% { opacity: 1; transform: rotate(0) scale(.8); }
   25% { opacity: 1; transform: rotate(-20deg) scale(1); }
@@ -589,3 +589,102 @@ img { -webkit-user-drag: none; pointer-events: none; }
   text-align: center;
 }
 .sound-help[hidden] { display: none; }
+
+
+/* ================= Mode « Claques » ================= */
+.mode-slap .only-coucou, .mode-coucou .only-slap { display: none; }
+
+.modes { display: flex; gap: 10px; }
+.mode {
+  position: relative;
+  padding: 10px 16px;
+  border-radius: 14px;
+  font-size: 18px;
+  font-weight: 900;
+  background: rgba(255,255,255,.2);
+  box-shadow: 0 4px 0 rgba(0,0,0,.25);
+  transition: transform .08s;
+}
+.mode:active { transform: translateY(3px) scale(.98); }
+.mode.selected { background: var(--yellow); color: var(--ink); }
+
+.face { position: relative; }
+
+/* joue rouge avec la trace de la main */
+.cheek {
+  position: absolute;
+  top: 38%;
+  left: var(--cheek-x, 2%);
+  width: 48%;
+  height: 48%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,30,30,.8) 0 35%, rgba(255,30,30,0) 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+}
+.cheek span {
+  font-size: clamp(16px, 6vw, 40px);
+  opacity: .55;
+  filter: grayscale(1) sepia(1) saturate(9) hue-rotate(-40deg);
+  transform: rotate(calc(var(--dir, 1) * 20deg));
+}
+.mode-slap .hole.hit .cheek { opacity: 1; transition: opacity .04s; }
+
+/* étoiles qui tournent au-dessus de la tête */
+.dizzy {
+  position: absolute;
+  left: 50%; top: -6%;
+  font-size: clamp(18px, 6vw, 36px);
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+.mode-slap .hole.hit .dizzy { animation: dizzy .9s linear forwards; }
+@keyframes dizzy {
+  0% { opacity: 0; transform: translateX(-50%) rotate(0) scale(.5); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-50%) rotate(540deg) scale(1.1); }
+}
+
+/* la tête part sur le côté sous la claque, puis revient */
+.mode-slap .hole.hit .face { animation: slapped .6s ease-out forwards; transform-origin: 50% 90%; }
+@keyframes slapped {
+  0% { transform: none; }
+  12% { transform: translateX(calc(var(--dir, 1) * 20%)) rotate(calc(var(--dir, 1) * 25deg)) scale(1.06, .92); }
+  35% { transform: translateX(calc(var(--dir, 1) * -7%)) rotate(calc(var(--dir, 1) * -10deg)); }
+  60% { transform: translateX(calc(var(--dir, 1) * 3%)) rotate(calc(var(--dir, 1) * 5deg)); }
+  100% { transform: rotate(0); }
+}
+
+/* PAF ! en style bande dessinée */
+.float.paf {
+  color: var(--yellow);
+  font-size: clamp(24px, 8vw, 46px);
+  -webkit-text-stroke: 2px #1b2440;
+  text-shadow: 0 4px 0 #1b2440;
+  animation: paf .8s ease-out forwards;
+}
+@keyframes paf {
+  0% { transform: translate(-50%, 10%) rotate(var(--rot, 0deg)) scale(.3); opacity: 0; }
+  15% { transform: translate(-50%, -10%) rotate(var(--rot, 0deg)) scale(1.3); opacity: 1; }
+  30% { transform: translate(-50%, -10%) rotate(var(--rot, 0deg)) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -70%) rotate(var(--rot, 0deg)) scale(1); opacity: 0; }
+}
+
+/* la main arrive par le côté et gifle */
+.mode-slap .paddle {
+  margin: -40px 0 0 -40px;
+  font-size: 70px;
+  transform-origin: 50% 100%;
+}
+.mode-slap .paddle.swing { animation: slapHand .35s ease-out forwards; }
+@keyframes slapHand {
+  0% { opacity: 1; transform: translateX(calc(var(--dir, 1) * -90px)) rotate(calc(var(--dir, 1) * -40deg)) scaleX(var(--dir, 1)); }
+  30% { opacity: 1; transform: translateX(calc(var(--dir, 1) * 8px)) rotate(calc(var(--dir, 1) * 8deg)) scaleX(var(--dir, 1)); }
+  60% { opacity: 1; transform: translateX(calc(var(--dir, 1) * 30px)) rotate(calc(var(--dir, 1) * 20deg)) scaleX(var(--dir, 1)); }
+  100% { opacity: 0; transform: translateX(calc(var(--dir, 1) * 50px)) rotate(calc(var(--dir, 1) * 25deg)) scaleX(var(--dir, 1)); }
+}

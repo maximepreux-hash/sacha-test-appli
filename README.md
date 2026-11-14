@@ -1,11 +1,14 @@
-# Coucou Briques 👋
+# Tape-Tête 🖐️
 
-Un petit jeu de cache-cache pour Sacha : les têtes de Sacha, Papa et Мама se cachent
-derrière des briques de construction. Dès qu'une tête sort, on la touche pour lui faire
-« Coucou ! » : elle se tortille de rire et envoie des cœurs.
+Un petit jeu de tape-taupe pour Sacha : les têtes de Sacha, Papa et Мама sortent de
+briques de construction. Deux façons de jouer, au choix dans le menu :
+
+- **✋ Claques** : une main gifle la tête, qui part sur le côté avec la joue toute rouge,
+  des étoiles qui tournent et un « PAF ! » de bande dessinée, avec un vrai bruit de claque.
+- **👋 Coucou** : version douce, on fait coucou aux têtes qui rient et envoient des cœurs.
 
 - 45 secondes par partie, 3 niveaux (Facile, Moyen, Rapide)
-- 1 point par coucou, **3 points** quand on attrape la balle de ping-pong orange
+- 1 point par tête, **3 points** pour la balle de ping-pong orange
 - Musique, sons, étoiles, confettis et record à battre
 - Fonctionne sur iPhone, iPad et Android, même sans connexion une fois installé
 

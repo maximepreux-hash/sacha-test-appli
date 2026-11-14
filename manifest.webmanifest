@@ -1,7 +1,7 @@
 {
-  "name": "Coucou Briques",
-  "short_name": "Coucou !",
-  "description": "Un petit jeu de cache-cache avec la famille.",
+  "name": "Tape-Tête",
+  "short_name": "Tape-Tête",
+  "description": "Un petit jeu de tape-taupe avec la famille.",
   "lang": "fr",
   "start_url": "./",
   "scope": "./",

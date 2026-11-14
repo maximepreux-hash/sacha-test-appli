@@ -30,6 +30,7 @@
     chars: DEFAULT_CHARS.map((c, i) => Object.assign({}, c, (saved.chars || [])[i] || {})),
     best: Array.isArray(saved.best) ? saved.best : [0, 0, 0],
     level: Number.isInteger(saved.level) ? saved.level : 0,
+    mode: saved.mode === 'coucou' ? 'coucou' : 'slap',
     muted: !!saved.muted,
   };
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
@@ -104,6 +105,14 @@
     const best = state.best[state.level];
     $('#menu-best').textContent = best ? '🏆 Record : ' + best + ' points' : '';
     $('#btn-sound').textContent = state.muted ? '🔇' : '🔊';
+    document.querySelectorAll('.mode').forEach((b) => b.classList.toggle('selected', b.dataset.mode === state.mode));
+    applyMode();
+  }
+
+  function applyMode() {
+    document.body.classList.toggle('mode-slap', state.mode === 'slap');
+    document.body.classList.toggle('mode-coucou', state.mode === 'coucou');
+    $('#paddle').textContent = state.mode === 'slap' ? '✋' : '👋';
   }
 
   // ---------- Plateau ----------
@@ -115,7 +124,8 @@
     el.style.setProperty('--brick', BRICK_COLORS[i]);
     el.innerHTML =
       '<div class="win"><div class="pit"></div><div class="mole">' +
-      '<div class="face"><img class="c0" alt=""><img class="c1" alt=""><img class="c2" alt=""></div>' +
+      '<div class="face"><img class="c0" alt=""><img class="c1" alt=""><img class="c2" alt=""><div class="cheek"><span>✋</span></div></div>' +
+      '<div class="dizzy">💫</div>' +
       '<div class="pball"></div></div></div>' +
       '<div class="brick"><span class="tag"></span></div>';
     board.appendChild(el);
@@ -233,11 +243,23 @@
     game.score += pts;
     if (isBall) game.balls++; else game.hits[h.kind]++;
     scoreEl.textContent = String(game.score);
-    Sound.hit(h.kind);
-    floatText(h, isBall ? 'Attrapée ! +3' : 'Coucou !', isBall);
-    if (!isBall) hearts(h);
+    const slap = state.mode === 'slap';
+    if (isBall) {
+      Sound.hit('ball');
+      floatText(h, slap ? 'Smash ! +3' : 'Attrapée ! +3', true);
+    } else if (slap) {
+      // la tête part du côté où va la main ; la joue frappée devient rouge
+      h.el.style.setProperty('--dir', String(lastDir));
+      h.el.style.setProperty('--cheek-x', lastDir > 0 ? '2%' : '50%');
+      Sound.slap(h.kind);
+      floatText(h, SLAP_WORDS[Math.floor(Math.random() * SLAP_WORDS.length)], false, 'paf');
+    } else {
+      Sound.hit(h.kind);
+      floatText(h, 'Coucou !', false);
+      hearts(h);
+    }
     h.state = 'leaving';
-    h.freeAt = game.t + 800;
+    h.freeAt = game.t + (slap ? 950 : 800);
     h.el.classList.add('hit');
     const token = game.token;
     setTimeout(() => {
@@ -245,7 +267,7 @@
         h.el.classList.add('leaving');
         h.el.classList.remove('up');
       }
-    }, isBall ? 250 : 500);
+    }, isBall ? 250 : slap ? 650 : 500);
   }
 
   // Des petits cœurs s'envolent quand on fait coucou
@@ -263,9 +285,12 @@
     }
   }
 
-  function floatText(h, text, big) {
+  const SLAP_WORDS = ['PAF !', 'BIM !', 'CLAC !', 'VLAN !', 'SLAP !', 'AÏE !'];
+
+  function floatText(h, text, big, extra) {
     const f = document.createElement('div');
-    f.className = 'float' + (big ? ' big' : '');
+    f.className = 'float' + (big ? ' big' : '') + (extra ? ' ' + extra : '');
+    if (extra === 'paf') f.style.setProperty('--rot', ((Math.random() - 0.5) * 30).toFixed(0) + 'deg');
     f.textContent = text;
     h.el.appendChild(f);
     setTimeout(() => f.remove(), 900);
@@ -328,7 +353,10 @@
 
   // ---------- Raquette qui suit le doigt ----------
   const paddle = $('#paddle');
+  let lastDir = 1; // 1 = la main arrive par la gauche, -1 = par la droite
   $('#screen-game').addEventListener('pointerdown', (e) => {
+    lastDir = Math.random() < 0.5 ? 1 : -1;
+    paddle.style.setProperty('--dir', String(lastDir));
     paddle.style.left = e.clientX + 'px';
     paddle.style.top = e.clientY + 'px';
     paddle.classList.remove('swing');
@@ -514,6 +542,9 @@
 
   // ---------- Boutons ----------
 
+  document.querySelectorAll('.mode').forEach((b) => b.addEventListener('click', () => {
+    state.mode = b.dataset.mode; save(); renderMenu();
+  }));
   document.querySelectorAll('.level').forEach((b) => b.addEventListener('click', () => {
     state.level = +b.dataset.level; save(); renderMenu();
   }));

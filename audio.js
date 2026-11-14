@@ -190,6 +190,31 @@ const Sound = (() => {
     tone(midi(base + 12), t, 0.25, 'sine', 0.18);
     [0, 0.05, 0.1].forEach((d, i) => tone(midi(base + 7 + i * 5), t + 0.25 + d, 0.12, 'sine', 0.12));
   }
+  // Bruit de claque : un « clac » sec (bruit filtré très court) + un petit choc sourd
+  function slap(kind) {
+    if (!ctx) return;
+    const t = now();
+    const burst = (start, dur, vol, type, freq, q) => {
+      const s = ctx.createBufferSource();
+      s.buffer = noiseBuf;
+      const f = ctx.createBiquadFilter();
+      f.type = type; f.frequency.value = freq; f.Q.value = q;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, start);
+      g.gain.exponentialRampToValueAtTime(vol, start + 0.002);
+      g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+      s.connect(f); f.connect(g); g.connect(sfxBus);
+      s.start(start, Math.random() * 0.3);
+      s.stop(start + dur + 0.02);
+    };
+    burst(t, 0.09, 1.6, 'bandpass', 1700 + Math.random() * 500, 0.8);
+    burst(t, 0.035, 1.0, 'highpass', 3500, 0.7);
+    tone(170, t, 0.09, 'sine', 0.7, sfxBus, 55);
+    // petit « boïng » de dessin animé, différent pour chacun
+    const b = [880, 620, 760][kind] || 700;
+    tone(b, t + 0.08, 0.3, 'triangle', 0.15, sfxBus, b * 0.45);
+  }
+
   function miss() {
     if (!ctx) return;
     tone(320, now(), 0.07, 'sine', 0.25, sfxBus, 200);
@@ -235,5 +260,5 @@ const Sound = (() => {
 
   const state = () => (ctx ? ctx.state : 'absent');
 
-  return { unlock, startMusic, stopMusic, hit, miss, popUp, beep, fanfare, setMuted, test, state };
+  return { unlock, startMusic, stopMusic, hit, slap, miss, popUp, beep, fanfare, setMuted, test, state };
 })();
