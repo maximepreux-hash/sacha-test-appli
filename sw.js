@@ -1,7 +1,8 @@
 // Permet au jeu de fonctionner sans connexion une fois ouvert une première fois.
-const CACHE = 'tapetete-v6';
+const CACHE = 'tapetete-v7';
 const ASSETS = [
-  './', './index.html', './style.css?v=6', './game.js?v=6', './audio.js?v=6', './manifest.webmanifest',
+  './', './index.html', './style.css?v=7', './game.js?v=7', './audio.js?v=7', './manifest.webmanifest',
+  './sounds/claque.mp3', './sounds/prout1.mp3', './sounds/prout2.mp3', './sounds/prout3.mp3', './sounds/prout4.mp3',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png',
 ];
 

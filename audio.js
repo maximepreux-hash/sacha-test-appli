@@ -28,6 +28,7 @@ const Sound = (() => {
     const d = noiseBuf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     prepare();
+    decodeFiles();
     return ctx;
   }
 
@@ -283,23 +284,108 @@ const Sound = (() => {
   function playBuf(buf, at, vol) {
     const s = ctx.createBufferSource();
     s.buffer = buf;
-    s.playbackRate.value = 0.94 + Math.random() * 0.12;
+    s.playbackRate.value = 0.96 + Math.random() * 0.08;
     const g = ctx.createGain();
     g.gain.value = vol;
     s.connect(g); g.connect(master);
     s.start(at);
   }
 
+  // ---------- Vrais sons enregistrés (fichiers dans sounds/) ----------
+  const FILES = {
+    slap: ['sounds/claque.mp3'],
+    fart: ['sounds/prout1.mp3', 'sounds/prout2.mp3', 'sounds/prout3.mp3', 'sounds/prout4.mp3'],
+  };
+  const rawFiles = { slap: [], fart: [] };     // fichiers téléchargés (pas encore décodés)
+  const samples = { slap: [], fart: [] };      // sons prêts à jouer
+  const custom = { slap: null, fart: null };   // sons enregistrés au micro par la famille
+  let decodedOnce = false;
+
+  // téléchargement dès l'ouverture du jeu (le décodage se fait au premier toucher)
+  Object.keys(FILES).forEach((name) => {
+    FILES[name].forEach((url) => {
+      rawFiles[name].push(fetch(url).then((r) => (r.ok ? r.arrayBuffer() : null)).catch(() => null));
+    });
+  });
+
+  function decode(ab) {
+    // ancienne et nouvelle façon d'appeler decodeAudioData (Safari)
+    return new Promise((res, rej) => {
+      const pr = ctx.decodeAudioData(ab, res, rej);
+      if (pr && pr.then) pr.then(res, rej);
+    });
+  }
+  function decodeFiles() {
+    if (decodedOnce || !ctx) return;
+    decodedOnce = true;
+    Object.keys(rawFiles).forEach((name) => {
+      rawFiles[name].forEach((p) => p.then((ab) => (ab ? decode(ab.slice(0)) : null))
+        .then((buf) => { if (buf) samples[name].push(buf); })
+        .catch(() => {}));
+    });
+    Object.keys(custom).forEach((name) => { if (custom[name] && custom[name].pending) loadCustom(name, custom[name].pending); });
+  }
+
+  // Son enregistré au micro : { data: 'data:audio/...;base64,...' } ; on enlève le silence du début et de la fin.
+  function loadCustom(name, rec) {
+    if (!rec || !rec.data) { custom[name] = null; return Promise.resolve(false); }
+    if (!ctx) { custom[name] = { pending: rec }; return Promise.resolve(false); }
+    const b64 = rec.data.split(',')[1] || '';
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return decode(bytes.buffer).then((buf) => {
+      const d = buf.getChannelData(0);
+      let peak = 0;
+      for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]));
+      const th = peak * 0.12;
+      let a = 0, z = d.length - 1;
+      while (a < d.length && Math.abs(d[a]) < th) a++;
+      while (z > a && Math.abs(d[z]) < th * 0.4) z--;
+      const sr = buf.sampleRate;
+      const start = Math.max(0, a / sr - 0.005);
+      const end = Math.min(buf.duration, z / sr + 0.08);
+      custom[name] = { buf, start, dur: Math.max(0.05, end - start), gain: peak > 0 ? Math.min(4, 0.9 / peak) : 1 };
+      return true;
+    }).catch(() => { custom[name] = null; return false; });
+  }
+
+  function playSample(name, at, vol, fallback) {
+    const c = custom[name];
+    if (c && c.buf) {
+      const s = ctx.createBufferSource();
+      s.buffer = c.buf;
+      const g = ctx.createGain();
+      g.gain.value = vol * c.gain;
+      s.connect(g); g.connect(master);
+      s.start(at, c.start, c.dur);
+      return;
+    }
+    const list = samples[name];
+    if (list.length) {
+      playBuf(list[Math.floor(Math.random() * list.length)], at, vol);
+      return;
+    }
+    fallback(); // fichiers pas encore prêts : son de secours
+  }
+
   function slap(kind, delay) {
     if (!ctx) return;
-    prepare();
-    playBuf(slapBufs[Math.floor(Math.random() * slapBufs.length)], now() + (delay || 0), 0.9);
+    decodeFiles();
+    const at = now() + (delay || 0);
+    playSample('slap', at, 1.0, () => { prepare(); playBuf(slapBufs[0], at, 0.9); });
   }
 
   function fart(delay) {
     if (!ctx) return;
-    prepare();
-    playBuf(fartBufs[Math.floor(Math.random() * fartBufs.length)], now() + (delay || 0), 1.0);
+    decodeFiles();
+    const at = now() + (delay || 0);
+    playSample('fart', at, 1.0, () => { prepare(); playBuf(fartBufs[0], at, 1.0); });
+  }
+
+  function setCustom(name, rec) {
+    if (!rec) { custom[name] = null; return Promise.resolve(true); }
+    return loadCustom(name, rec);
   }
 
   function miss() {
@@ -347,5 +433,5 @@ const Sound = (() => {
 
   const state = () => (ctx ? ctx.state : 'absent');
 
-  return { unlock, startMusic, stopMusic, hit, slap, fart, miss, popUp, beep, fanfare, setMuted, test, state };
+  return { unlock, startMusic, stopMusic, hit, slap, fart, setCustom, miss, popUp, beep, fanfare, setMuted, test, state };
 })();

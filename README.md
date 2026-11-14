@@ -45,3 +45,14 @@ enregistrées uniquement sur le téléphone ou la tablette.
 | `game.js` | Les règles du jeu, les réglages, le recadrage des photos |
 | `audio.js` | La musique et les bruitages (générés, sans fichier audio) |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Installation sur l'écran d'accueil et mode hors connexion |
+
+## 🔊 Les bruits
+
+- La claque et les prouts sont de **vrais sons enregistrés** (dossier `sounds/`).
+- Dans ⚙️ → « Les bruits du jeu », on peut **enregistrer ses propres bruits** avec le micro
+  du téléphone (ils restent sur l'appareil), les écouter, ou revenir au son d'origine.
+
+Crédits des sons :
+- `sounds/claque.mp3` : « punch.wav » des exemples de [pygame](https://www.pygame.org) (licence LGPL).
+- `sounds/prout1.mp3` à `prout3.mp3` : paquet npm [terminalfart](https://www.npmjs.com/package/terminalfart) (licence Apache-2.0).
+- `sounds/prout4.mp3` : paquet npm [pull-my-finger](https://www.npmjs.com/package/pull-my-finger) (licence MIT).

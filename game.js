@@ -31,6 +31,7 @@
     best: Array.isArray(saved.best) ? saved.best : [0, 0, 0],
     level: Number.isInteger(saved.level) ? saved.level : 0,
     mode: saved.mode === 'coucou' ? 'coucou' : 'slap',
+    sounds: Object.assign({ slap: null, fart: null }, saved.sounds || {}),
     muted: !!saved.muted,
   };
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
@@ -455,6 +456,111 @@
       row.append(img, fields);
       list.appendChild(row);
     });
+    renderSoundRows();
+  }
+
+  // ---------- Bruits : écouter, enregistrer le sien au micro, revenir au son d'origine ----------
+  let recording = null;
+  function renderSoundRows() {
+    const box = $('#sound-rec');
+    box.innerHTML = '';
+    [
+      { name: 'slap', title: '✋ La claque', tip: 'Astuce : tapez fort dans vos mains ou sur votre cuisse, près du téléphone.' },
+      { name: 'fart', title: '💨 Le prout de ' + state.chars[2].name, tip: 'Astuce : faites « prrrout » avec la bouche contre votre bras !' },
+    ].forEach(({ name, title, tip }) => {
+      const row = document.createElement('div');
+      row.className = 'set-row sound-row';
+      const head = document.createElement('div');
+      head.className = 'sound-title';
+      head.textContent = title + (state.sounds[name] ? ' (le vôtre)' : '');
+      const btns = document.createElement('div');
+      btns.className = 'row';
+      const isRec = recording && recording.name === name;
+      const play = document.createElement('button');
+      play.className = 'small-btn'; play.textContent = '▶ Écouter';
+      play.disabled = !!recording;
+      play.addEventListener('click', () => { Sound.unlock(); if (name === 'slap') Sound.slap(0, 0); else Sound.fart(0); });
+      const recBtn = document.createElement('button');
+      recBtn.className = 'small-btn rec' + (isRec ? ' on' : '');
+      recBtn.textContent = isRec ? '⏹ Arrêter' : '🎙️ Enregistrer le mien';
+      recBtn.disabled = !!recording && !isRec;
+      recBtn.addEventListener('click', () => { if (isRec) stopRecording(); else startRecording(name); });
+      btns.append(play, recBtn);
+      if (state.sounds[name] && !recording) {
+        const reset = document.createElement('button');
+        reset.className = 'small-btn danger'; reset.textContent = '↺ Son d\'origine';
+        reset.addEventListener('click', () => { state.sounds[name] = null; save(); Sound.setCustom(name, null); renderSoundRows(); });
+        btns.appendChild(reset);
+      }
+      const help = document.createElement('p');
+      help.className = 'sound-tip';
+      help.textContent = isRec ? '🔴 J\'écoute… faites le bruit maintenant (3 secondes maximum)' : tip;
+      row.append(head, btns, help);
+      box.appendChild(row);
+    });
+  }
+
+  function setSession(type) {
+    try { if (navigator.audioSession) navigator.audioSession.type = type; } catch (e) { /* ignoré */ }
+  }
+
+  async function startRecording(name) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
+      alert("Ce téléphone ne permet pas d'enregistrer un son dans le jeu. Mettez-le à jour (iOS 14.3 ou plus récent).");
+      return;
+    }
+    Sound.unlock();
+    Sound.stopMusic();
+    setSession('play-and-record');
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+    } catch (e) {
+      setSession('playback');
+      if (!state.muted) Sound.startMusic();
+      alert("Le micro n'est pas autorisé. Sur iPhone : Réglages → Safari → Micro → Autoriser, puis réessayez.");
+      return;
+    }
+    const types = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg'];
+    const type = types.find((t) => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t));
+    let mr;
+    try { mr = new MediaRecorder(stream, type ? { mimeType: type } : undefined); } catch (e) { mr = new MediaRecorder(stream); }
+    const chunks = [];
+    mr.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+    mr.onstop = () => {
+      stream.getTracks().forEach((t) => t.stop());
+      clearTimeout(recording && recording.timer);
+      setSession('playback');
+      const blob = new Blob(chunks, { type: mr.mimeType || type || 'audio/mp4' });
+      const fr = new FileReader();
+      fr.onload = () => {
+        const rec = { data: fr.result };
+        Sound.unlock();
+        Sound.setCustom(name, rec).then((ok) => {
+          recording = null;
+          if (ok) {
+            state.sounds[name] = rec;
+            if (!save()) {
+              state.sounds[name] = null;
+              Sound.setCustom(name, null);
+              alert("Pas assez de place sur l'appareil pour garder ce son.");
+            } else if (name === 'slap') Sound.slap(0, 0.1); else Sound.fart(0.1);
+          } else {
+            alert("Je n'ai pas réussi à lire l'enregistrement. Réessayez.");
+          }
+          if (!state.muted) Sound.startMusic();
+          renderSoundRows();
+        });
+      };
+      fr.readAsDataURL(blob);
+    };
+    mr.start();
+    recording = { name, mr, timer: setTimeout(stopRecording, 3000) };
+    renderSoundRows();
+  }
+
+  function stopRecording() {
+    if (recording && recording.mr.state !== 'inactive') recording.mr.stop();
   }
 
   fileInput.addEventListener('change', () => {
@@ -589,6 +695,7 @@
     msg.hidden = false;
   });
   $('#btn-settings-done').addEventListener('click', () => {
+    if (recording) stopRecording();
     refreshHoleImages(); renderMenu(); showScreen('menu');
   });
 
@@ -598,6 +705,7 @@
 
   // ---------- Démarrage ----------
   applyColors();
+  ['slap', 'fart'].forEach((n) => { if (state.sounds[n]) Sound.setCustom(n, state.sounds[n]); });
   refreshHoleImages();
   renderMenu();
   Sound.setMuted(state.muted);

@@ -707,3 +707,14 @@ img { -webkit-user-drag: none; pointer-events: none; }
 }
 
 .version { margin: 0; font-size: 14px; font-weight: 700; opacity: .7; }
+
+.settings-sub { margin: 6px 0 0; font-size: 22px; font-weight: 900; }
+.sound-rec { width: min(100%, 520px); display: flex; flex-direction: column; gap: 12px; }
+.sound-row { flex-direction: column; align-items: stretch; gap: 8px; }
+.sound-title { font-weight: 900; font-size: 18px; }
+.sound-row .row { justify-content: flex-start; gap: 8px; }
+.sound-tip { margin: 0; font-size: 14px; color: #5b6480; line-height: 1.35; }
+.small-btn.rec { background: var(--red); }
+.small-btn.rec.on { animation: pulse 1s ease-in-out infinite; }
+.small-btn:disabled { opacity: .45; }
+@keyframes pulse { 50% { transform: scale(1.06); } }
