@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Tape-Tête Ping-Pong</title>
-<meta name="description" content="Un petit jeu de tape-taupe avec la famille.">
+<title>Coucou Briques</title>
+<meta name="description" content="Un petit jeu de cache-cache avec la famille.">
 <meta name="theme-color" content="#1565c0">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Tape-Tête">
+<meta name="apple-mobile-web-app-title" content="Coucou !">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -24,12 +24,12 @@
       <button class="icon-btn" id="btn-sound" aria-label="Son">🔊</button>
       <button class="icon-btn" id="btn-settings" aria-label="Réglages">⚙️</button>
     </div>
-    <h1 class="title" aria-label="Tape-Tête">
-      <span class="t b-red">T</span><span class="t b-yellow">A</span><span class="t b-green">P</span><span class="t b-blue">E</span>
+    <h1 class="title" aria-label="Coucou !">
+      <span class="t b-red">C</span><span class="t b-yellow">O</span><span class="t b-green">U</span>
       <br>
-      <span class="t b-orange">T</span><span class="t b-red">Ê</span><span class="t b-yellow">T</span><span class="t b-green">E</span>
+      <span class="t b-blue">C</span><span class="t b-orange">O</span><span class="t b-red">U</span><span class="t b-yellow">!</span>
     </h1>
-    <p class="subtitle">🏓 Ping-Pong</p>
+    <p class="subtitle">👋 Cache-cache 🏓</p>
     <div class="menu-faces" id="menu-faces"></div>
     <div class="levels" id="levels">
       <button class="level" data-level="0"><span class="studs s1"><i></i></span>Facile</button>
@@ -95,7 +95,7 @@
   </div>
 
   <input type="file" id="file-input" accept="image/*" hidden>
-  <div class="paddle" id="paddle"></div>
+  <div class="paddle" id="paddle">👋</div>
   <canvas id="confetti"></canvas>
 </div>
 <script src="audio.js"></script>

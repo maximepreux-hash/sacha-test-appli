@@ -234,9 +234,10 @@
     if (isBall) game.balls++; else game.hits[h.kind]++;
     scoreEl.textContent = String(game.score);
     Sound.hit(h.kind);
-    floatText(h, isBall ? 'Smash ! +3' : '+1', isBall);
+    floatText(h, isBall ? 'Attrapée ! +3' : 'Coucou !', isBall);
+    if (!isBall) hearts(h);
     h.state = 'leaving';
-    h.freeAt = game.t + 450;
+    h.freeAt = game.t + 800;
     h.el.classList.add('hit');
     const token = game.token;
     setTimeout(() => {
@@ -244,7 +245,22 @@
         h.el.classList.add('leaving');
         h.el.classList.remove('up');
       }
-    }, 200);
+    }, isBall ? 250 : 500);
+  }
+
+  // Des petits cœurs s'envolent quand on fait coucou
+  const HEARTS = ['❤️', '💛', '💙', '💚', '🧡'];
+  function hearts(h) {
+    for (let i = 0; i < 3; i++) {
+      const e = document.createElement('div');
+      e.className = 'heart';
+      e.textContent = HEARTS[Math.floor(Math.random() * HEARTS.length)];
+      e.style.left = (20 + i * 25 + Math.random() * 10) + '%';
+      e.style.setProperty('--dx', ((i - 1) * 30 + (Math.random() - 0.5) * 20) + '%');
+      e.style.animationDelay = (i * 80) + 'ms';
+      h.el.appendChild(e);
+      setTimeout(() => e.remove(), 1300);
+    }
   }
 
   function floatText(h, text, big) {

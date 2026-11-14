@@ -183,10 +183,12 @@ const Sound = (() => {
       [0, 0.16, 0.27, 0.35, 0.4].forEach((d, i) => tone(1500 + i * 120, t + d, 0.05, 'sine', 0.7 - i * 0.12));
       return;
     }
-    const base = [620, 420, 520][kind] || 500;
-    tone(base, t, 0.16, 'square', 0.22, sfxBus, base * 2.2);
-    tone(base * 1.5, t + 0.05, 0.12, 'triangle', 0.3);
-    noise(t, 0.08, 0.35, sfxBus, 2000);
+    // petit carillon joyeux « cou-cou ! » (une hauteur différente pour chacun)
+    const base = [79, 72, 76][kind] || 76;
+    tone(midi(base), t, 0.14, 'triangle', 0.5);
+    tone(midi(base - 4), t + 0.13, 0.22, 'triangle', 0.5);
+    tone(midi(base + 12), t, 0.25, 'sine', 0.18);
+    [0, 0.05, 0.1].forEach((d, i) => tone(midi(base + 7 + i * 5), t + 0.25 + d, 0.12, 'sine', 0.12));
   }
   function miss() {
     if (!ctx) return;
