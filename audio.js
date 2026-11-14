@@ -27,6 +27,7 @@ const Sound = (() => {
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    prepare();
     return ctx;
   }
 
@@ -190,82 +191,115 @@ const Sound = (() => {
     tone(midi(base + 12), t, 0.25, 'sine', 0.18);
     [0, 0.05, 0.1].forEach((d, i) => tone(midi(base + 7 + i * 5), t + 0.25 + d, 0.12, 'sine', 0.12));
   }
-  // Bruit de claque : un « clac » sec (bruit filtré très court) + un petit choc sourd
-  function slap(kind, delay) {
-    if (!ctx) return;
-    const t = now() + (delay || 0);
-    const burst = (start, dur, vol, type, freq, q) => {
-      const s = ctx.createBufferSource();
-      s.buffer = noiseBuf;
-      const f = ctx.createBiquadFilter();
-      f.type = type; f.frequency.value = freq; f.Q.value = q;
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0.0001, start);
-      g.gain.exponentialRampToValueAtTime(vol, start + 0.002);
-      g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
-      s.connect(f); f.connect(g); g.connect(sfxBus);
-      s.start(start, Math.random() * 0.3);
-      s.stop(start + dur + 0.02);
-    };
-    burst(t, 0.09, 1.6, 'bandpass', 1700 + Math.random() * 500, 0.8);
-    burst(t, 0.035, 1.0, 'highpass', 3500, 0.7);
-    tone(170, t, 0.09, 'sine', 0.7, sfxBus, 55);
-    // petit « boïng » de dessin animé, différent pour chacun
-    const b = [880, 620, 760][kind] || 700;
-    tone(b, t + 0.08, 0.3, 'triangle', 0.15, sfxBus, b * 0.45);
+  // ---------- Sons « réalistes » fabriqués échantillon par échantillon ----------
+  // (plus naturels que des notes de synthétiseur ; 3 variantes de chaque, tirées au hasard)
+
+  // Résonateur à deux pôles : fait « sonner » une impulsion à une fréquence donnée.
+  function resonator(fc, bw, sr) {
+    const r = Math.exp(-Math.PI * bw / sr);
+    const a1 = 2 * r * Math.cos(2 * Math.PI * fc / sr), a2 = -r * r;
+    let y1 = 0, y2 = 0;
+    return (x) => { const y = x + a1 * y1 + a2 * y2; y2 = y1; y1 = y; return y; };
+  }
+  function normalize(d, peak) {
+    let m = 0;
+    for (let i = 0; i < d.length; i++) m = Math.max(m, Math.abs(d[i]));
+    if (m > 0) for (let i = 0; i < d.length; i++) d[i] *= peak / m;
   }
 
-  // Bruit de prout : un son grave qui « vibre » (tremolo) et descend, avec un peu de souffle
+  // CLAQUE : un « clac » de peau très bref et brillant + un petit choc sourd + l'écho de la pièce
+  function makeSlap(sr) {
+    const n = Math.floor(sr * 0.22);
+    const buf = ctx.createBuffer(1, n, sr);
+    const d = buf.getChannelData(0);
+    const skin = resonator(1100 + Math.random() * 600, 900, sr);
+    const crack = resonator(3200 + Math.random() * 800, 2500, sr);
+    let prev = 0;
+    for (let i = 0; i < n; i++) {
+      const t = i / sr;
+      const env = t < 0.0006 ? t / 0.0006 : Math.exp(-(t - 0.0006) / 0.007);
+      const w = Math.random() * 2 - 1;
+      const hp = w - prev; prev = w; // enlève les graves du souffle
+      const noise = hp * env;
+      const body = Math.sin(2 * Math.PI * 150 * t) * Math.exp(-t / 0.018) * 0.35;
+      d[i] = skin(noise) * 0.3 + crack(noise) * 0.12 + noise * 0.25 + body * 0.7;
+    }
+    // échos très courts (la pièce)
+    const out = new Float32Array(n);
+    [[0, 1], [0.009, 0.22], [0.019, 0.13], [0.031, 0.07]].forEach(([dt, g]) => {
+      const off = Math.floor(dt * sr);
+      for (let i = 0; i + off < n; i++) out[i + off] += d[i] * g;
+    });
+    d.set(out);
+    normalize(d, 0.95);
+    return buf;
+  }
+
+  // PROUT : une suite d'impulsions graves irrégulières (≈ 70-130 par seconde) qui font
+  // résonner des fréquences basses, avec un volume qui « gargouille » et un pfff final.
+  function makeFart(sr) {
+    const dur = 0.55 + Math.random() * 0.45;
+    const n = Math.floor(sr * dur);
+    const buf = ctx.createBuffer(1, n, sr);
+    const d = buf.getChannelData(0);
+    const r1 = resonator(170 + Math.random() * 60, 110, sr);
+    const r2 = resonator(420 + Math.random() * 120, 220, sr);
+    const r3 = resonator(90, 60, sr);
+    const startF = 95 + Math.random() * 40, endF = 55 + Math.random() * 15;
+    const squeak = Math.random() < 0.4;
+    const wob = 6 + Math.random() * 6;
+    let nextPulse = 0, nf = 0;
+    for (let i = 0; i < n; i++) {
+      const t = i / sr, k = t / dur;
+      let f = startF + (endF - startF) * k;
+      if (squeak && k > 0.8) f *= 1 + (k - 0.8) * 4;
+      let x = 0;
+      if (i >= nextPulse) {
+        x = 0.7 + Math.random() * 0.6;
+        nextPulse = i + Math.floor(sr / (f * (0.94 + Math.random() * 0.12)));
+      }
+      const attack = Math.min(1, t / 0.015);
+      const release = k > 0.75 ? Math.max(0, 1 - (k - 0.75) / 0.25) : 1;
+      const gurgle = 0.65 + 0.35 * Math.sin(2 * Math.PI * wob * t + Math.sin(2 * Math.PI * 2.3 * t) * 2);
+      const env = attack * release * gurgle;
+      nf = nf * 0.97 + (Math.random() * 2 - 1) * 0.03; // souffle grave
+      // les résonateurs amplifient beaucoup : on ramène tout à la même échelle
+      const v = (r1(x) * 1.0 + r2(x) * 0.5 + r3(x) * 0.5) / 1500 + nf * 0.25 * (0.3 + k);
+      d[i] = v * env;
+    }
+    normalize(d, 1);
+    for (let i = 0; i < n; i++) d[i] = Math.tanh(d[i] * 1.8); // un peu de grain
+    normalize(d, 0.95);
+    return buf;
+  }
+
+  let slapBufs = null, fartBufs = null;
+  function prepare() {
+    if (slapBufs || !ctx) return;
+    const sr = ctx.sampleRate;
+    slapBufs = [makeSlap(sr), makeSlap(sr), makeSlap(sr)];
+    fartBufs = [makeFart(sr), makeFart(sr), makeFart(sr)];
+  }
+  function playBuf(buf, at, vol) {
+    const s = ctx.createBufferSource();
+    s.buffer = buf;
+    s.playbackRate.value = 0.94 + Math.random() * 0.12;
+    const g = ctx.createGain();
+    g.gain.value = vol;
+    s.connect(g); g.connect(master);
+    s.start(at);
+  }
+
+  function slap(kind, delay) {
+    if (!ctx) return;
+    prepare();
+    playBuf(slapBufs[Math.floor(Math.random() * slapBufs.length)], now() + (delay || 0), 0.9);
+  }
+
   function fart(delay) {
     if (!ctx) return;
-    const t = now() + (delay || 0);
-    const dur = 0.45 + Math.random() * 0.45;
-    const f0 = 85 + Math.random() * 45;
-
-    const out = ctx.createGain();
-    out.gain.setValueAtTime(0.0001, t);
-    out.gain.exponentialRampToValueAtTime(1.0, t + 0.02);
-    out.gain.setValueAtTime(1.0, t + dur * 0.7);
-    out.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    const lp = ctx.createBiquadFilter();
-    lp.type = 'lowpass'; lp.frequency.value = 700; lp.Q.value = 4;
-    lp.connect(out); out.connect(sfxBus);
-
-    // le « brrr » : on module le volume très vite
-    const flutter = ctx.createGain();
-    flutter.gain.value = 0.5;
-    flutter.connect(lp);
-    const lfo = ctx.createOscillator();
-    lfo.type = 'square';
-    lfo.frequency.setValueAtTime(22 + Math.random() * 14, t);
-    lfo.frequency.linearRampToValueAtTime(14 + Math.random() * 6, t + dur);
-    const lfoAmt = ctx.createGain();
-    lfoAmt.gain.value = 0.45;
-    lfo.connect(lfoAmt); lfoAmt.connect(flutter.gain);
-
-    const o = ctx.createOscillator();
-    o.type = 'sawtooth';
-    o.frequency.setValueAtTime(f0, t);
-    o.frequency.exponentialRampToValueAtTime(f0 * 0.6, t + dur);
-    if (Math.random() < 0.4) { // parfois un petit couinement à la fin
-      o.frequency.setValueAtTime(f0 * 0.6, t + dur * 0.8);
-      o.frequency.exponentialRampToValueAtTime(f0 * 1.6, t + dur);
-    }
-    const wob = ctx.createOscillator();
-    wob.frequency.value = 7;
-    const wobAmt = ctx.createGain();
-    wobAmt.gain.value = f0 * 0.12;
-    wob.connect(wobAmt); wobAmt.connect(o.frequency);
-    o.connect(flutter);
-
-    const n = ctx.createBufferSource();
-    n.buffer = noiseBuf; n.loop = true;
-    const nf = ctx.createBiquadFilter();
-    nf.type = 'lowpass'; nf.frequency.value = 350;
-    const ng = ctx.createGain(); ng.gain.value = 0.6;
-    n.connect(nf); nf.connect(ng); ng.connect(flutter);
-
-    [lfo, o, wob, n].forEach((x) => { x.start(t); x.stop(t + dur + 0.05); });
+    prepare();
+    playBuf(fartBufs[Math.floor(Math.random() * fartBufs.length)], now() + (delay || 0), 1.0);
   }
 
   function miss() {

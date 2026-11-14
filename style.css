@@ -705,3 +705,5 @@ img { -webkit-user-drag: none; pointer-events: none; }
   20% { opacity: 1; }
   100% { opacity: 0; transform: translate(calc(-50% + var(--dir, 1) * 60%), -60%) scale(1.4) scaleX(var(--dir, 1)); }
 }
+
+.version { margin: 0; font-size: 14px; font-weight: 700; opacity: .7; }
