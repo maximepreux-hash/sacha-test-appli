@@ -1,0 +1,10 @@
+# Les photos de famille ne doivent jamais être envoyées sur GitHub :
+# elles se choisissent directement dans le jeu, sur le téléphone.
+*.jpg
+*.jpeg
+*.heic
+*.HEIC
+*.JPG
+*.JPEG
+photos/
+.DS_Store

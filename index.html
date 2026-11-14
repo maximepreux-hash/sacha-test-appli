@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Tape-Tête Ping-Pong</title>
+<meta name="description" content="Un petit jeu de tape-taupe avec la famille.">
+<meta name="theme-color" content="#1565c0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tape-Tête">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- MENU -->
+  <section id="screen-menu" class="screen active">
+    <div class="topbar">
+      <button class="icon-btn" id="btn-sound" aria-label="Son">🔊</button>
+      <button class="icon-btn" id="btn-settings" aria-label="Réglages">⚙️</button>
+    </div>
+    <h1 class="title" aria-label="Tape-Tête">
+      <span class="t b-red">T</span><span class="t b-yellow">A</span><span class="t b-green">P</span><span class="t b-blue">E</span>
+      <br>
+      <span class="t b-orange">T</span><span class="t b-red">Ê</span><span class="t b-yellow">T</span><span class="t b-green">E</span>
+    </h1>
+    <p class="subtitle">🏓 Ping-Pong</p>
+    <div class="menu-faces" id="menu-faces"></div>
+    <div class="levels" id="levels">
+      <button class="level" data-level="0"><span class="studs s1"><i></i></span>Facile</button>
+      <button class="level" data-level="1"><span class="studs s2"><i></i><i></i></span>Moyen</button>
+      <button class="level" data-level="2"><span class="studs s3"><i></i><i></i><i></i></span>Rapide</button>
+    </div>
+    <button class="big-btn" id="btn-play">▶ Jouer</button>
+    <p class="best" id="menu-best"></p>
+  </section>
+
+  <!-- JEU -->
+  <section id="screen-game" class="screen">
+    <div class="hud">
+      <div class="score-pill"><span class="ball-icon"></span><span id="score">0</span></div>
+      <div class="timebar"><div id="timebar-fill"></div></div>
+      <button class="icon-btn small" id="btn-quit" aria-label="Quitter">✕</button>
+    </div>
+    <div class="board-wrap"><div class="board" id="board"></div></div>
+    <div class="countdown" id="countdown"></div>
+  </section>
+
+  <!-- FIN -->
+  <section id="screen-end" class="screen">
+    <h2 class="end-title" id="end-title">Bravo !</h2>
+    <div class="stars" id="end-stars"><span>★</span><span>★</span><span>★</span></div>
+    <div class="end-score"><span id="end-score">0</span> points</div>
+    <p class="end-record" id="end-record"></p>
+    <div class="end-stats" id="end-stats"></div>
+    <div class="row">
+      <button class="big-btn" id="btn-again">↻ Rejouer</button>
+    </div>
+    <button class="mid-btn" id="btn-menu">Menu</button>
+  </section>
+
+  <!-- RÉGLAGES -->
+  <section id="screen-settings" class="screen scroll">
+    <h2 class="settings-title">Réglages des parents</h2>
+    <p class="note">🔒 Les photos restent <b>uniquement sur cet appareil</b>. Elles ne sont jamais envoyées sur Internet.</p>
+    <div id="settings-list"></div>
+    <button class="big-btn" id="btn-settings-done">✓ Terminé</button>
+  </section>
+
+  <!-- RECADRAGE PHOTO -->
+  <div class="modal" id="crop-modal" hidden>
+    <div class="crop-box">
+      <p class="crop-help">Glisse la photo pour mettre le visage dans le rond</p>
+      <div class="crop-area" id="crop-area">
+        <canvas id="crop-canvas" width="600" height="600"></canvas>
+        <div class="crop-ring"></div>
+      </div>
+      <label class="zoom-label">🔍 Zoom
+        <input type="range" id="crop-zoom" min="1" max="5" step="0.01" value="1">
+      </label>
+      <div class="row">
+        <button class="mid-btn" id="crop-cancel">Annuler</button>
+        <button class="mid-btn ok" id="crop-ok">Valider</button>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="file-input" accept="image/*" hidden>
+  <div class="paddle" id="paddle"></div>
+  <canvas id="confetti"></canvas>
+</div>
+<script src="audio.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
